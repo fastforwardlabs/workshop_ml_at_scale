@@ -9,10 +9,9 @@ spark = SparkSession\
     .config("spark.executor.memory","8g")\
     .config("spark.executor.cores","4")\
     .config("spark.driver.memory","6g")\
-    .config("spark.executor.instances","5")\
-    .config("spark.yarn.access.hadoopFileSystems","s3a://ml-field")\
-    .config("spark.hadoop.fs.s3a.aws.credentials.provider","org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider")\
-    .getOrCreate()    
+    .config("spark.executor.instances","3")\
+    .config("spark.yarn.access.hadoopFileSystems","s3a://prod-cdptrialuser19-trycdp-com")\
+    .getOrCreate()
 
 
 from IPython.core.display import HTML
@@ -51,18 +50,13 @@ schema = StructType(
 )
 
 flight_df = spark.read.csv(
-  path="s3a://ml-field/demo/flight-analysis/data/airlines_csv/*",
+  path="s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/airlines_csv/*",
   header=True,
   schema=schema
 )
 
 from pyspark.sql.types import StringType
 from pyspark.sql.functions import udf,weekofyear
-
-# pad_time = udf(lambda x: x if len(x) == 4 else "0{}".format(x),StringType())
-
-# df.select("CRS_DEP_TIME").\
-#   withColumn('pad_time', pad_time("CRS_DEP_TIME")).show()
 
 # This has been added to help with partitioning.
 flight_df = flight_df\
@@ -84,22 +78,32 @@ smaller_data_set = flight_df.select(
 
 smaller_data_set.show()
 
-smaller_data_set.write.saveAsTable('default.flight_test_table', format='parquet', mode='overwrite', path='s3a://ml-field/demo/ml_at_scale/')
+
+from pyspark.sql  import SQLContext
+sqlContext = SQLContext(spark)
+
+spark.sql("show databases").show()
+spark.sql("show tables in default").show()
+
+sqlContext.registerDataFrameAsTable(flight_df, "temp_flight_df")
+spark.sql("select count(*) from temp_flight_df").show()
 
 
 # This is commented out as it has already been run
 #smaller_data_set.write.parquet(
-#  path="s3a://ml-field/demo/flight-analysis/data/airline_parquet_partitioned/",
-#  partitionBy="WEEK",
+#  path="s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/airlines/airline_parquet",
+#  mode='overwrite', 
 #  compression="snappy")
 
 
-# This will write the able to Hive to be used for other SQL services.
-#!cp /home/cdsw/hive-site.xml /etc/hadoop/conf/
+# This will write the table to Hive to be used for other SQL services.
 #smaller_data_set.write.saveAsTable(
-#  'default.flight_test_table', 
+#  'default.smaller_flight_table', 
 #  format='parquet', 
 #  mode='overwrite', 
-#  path='s3a://ml-field/demo/ml_at_scale/'
-#  partitionBy="WEEK")
+#  path='s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/warehouse/tablespace/external/hive/smaller_flight_table')
+
+spark.sql("select count(*) from flight_test_table").show()
+
+spark.sql("select * from default.smaller_flight_table limit 10").show()
 

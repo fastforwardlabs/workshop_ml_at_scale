@@ -74,15 +74,12 @@ library(leaflet)
 
 #spark_home_set("/etc/spark/")
 config <- spark_config()
-config$spark.executor.memory <- "16g"
-config$spark.executor.cores <- "4"
+config$spark.executor.memory <- "8g"
+config$spark.executor.cores <- "2"
 config$spark.driver.memory <- "6g"
-config$spark.executor.instances <- "10"
-config$spark.dynamicAllocation.enabled  <- "false"
-
-config$spark.hadoop.fs.s3a.aws.credentials.provider  <- "org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider"
-config$spark.yarn.access.hadoopFileSystems <- "s3a://ml-field"
-config$spark.sql.catalogImplementation <- "in-memory"
+config$spark.executor.instances <- "5"
+config$spark.yarn.access.hadoopFileSystems <- "s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/"
+#config$spark.sql.catalogImplementation <- "in-memory"
 sc <- spark_connect(master = "yarn-client", config=config)
 
 #---
@@ -113,7 +110,7 @@ html(paste("<a href='http://spark-",Sys.getenv("CDSW_ENGINE_ID"),".",Sys.getenv(
 #
 
 s3_link_all <-
-  "s3a://ml-field/demo/flight-analysis/data/airlines_csv/*"
+  "s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/airlines_csv/*"
 #  "s3a://ml-field/demo/flight-analysis/data/airlines_csv/2010.csv"
 
 cols = list(
@@ -339,7 +336,7 @@ cancelled_by_route_non_combo %>% head(10) %>% as.data.frame
 spark_read_csv(
   sc,
   name = "airports",
-  path = "s3a://ml-field/demo/flight-analysis/data/airports_orig.csv",
+  path = "s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/airports_orig.csv",
   infer_schema = TRUE,
   header = TRUE
 )

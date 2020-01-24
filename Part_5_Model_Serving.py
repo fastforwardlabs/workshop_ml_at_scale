@@ -8,14 +8,10 @@ spark = SparkSession.builder \
       .appName("Flight Predictor") \
       .master("local[*]") \
       .config("spark.driver.memory","4g")\
-      .config("spark.hadoop.fs.s3a.aws.credentials.provider","org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider")\
-      .config("spark.hadoop.yarn.resourcemanager.principal","jfletcher")\
+      .config("spark.hadoop.yarn.resourcemanager.principal","trial1901")\
       .getOrCreate()
-  
-#      .config("spark.hadoop.fs.s3a.metadatastore.impl","org.apache.hadoop.fs.s3a.s3guard.NullMetadataStore")\
-#      .config("spark.hadoop.fs.s3a.delegation.token.binding","")\
-  
-model = PipelineModel.load("s3a://ml-field/demo/flight-analysis/data/models/large_model") 
+
+model = PipelineModel.load("s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/airlines/models/lr-model") 
 
 from pyspark.sql.types import *
 
@@ -33,7 +29,6 @@ from pyspark.sql.functions import udf,substring
 convert_time_to_hour = udf(lambda x: x if len(x) == 4 else "0{}".format(x),StringType())
 
 #args = {"feature":"AA,ICT,DFW,1135,85,11,328"}
-
 
 def predict(args):
   flight_features = args["feature"].split(",")

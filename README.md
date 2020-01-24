@@ -9,5 +9,29 @@ This project is for the end-to-end ML at Scale workshop. It creates an API that 
 + ML Model Training
 + ML Model Serving
 
+
+## Setup Required
+
+### All users
+
+!chmod 777 cdsw-build.sh
+
+
+### Python Users
+
+!pip3 install ipyleaflet
+!jupyter nbextension enable --py ipyleaflet
+
+
+### R - users
+install these R packages
+
+sparklyr
+psyche
+ggthemes
+leaflet
+
+
+
 Related Content
 http://blog.cloudera.com/blog/2017/02/analyzing-us-flight-data-on-amazon-s3-with-sparklyr-and-apache-spark-2-0/

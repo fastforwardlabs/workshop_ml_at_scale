@@ -9,18 +9,20 @@ from pyspark.ml.evaluation import BinaryClassificationEvaluator
 spark = SparkSession\
     .builder\
     .appName("Airline ML")\
-    .config("spark.executor.memory","16g")\
+    .config("spark.executor.memory","8g")\
     .config("spark.executor.cores","4")\
     .config("spark.driver.memory","6g")\
-    .config("spark.executor.instances","10")\
-    .config("spark.yarn.access.hadoopFileSystems","s3a://ml-field")\
+    .config("spark.executor.instances","5")\
+    .config("spark.yarn.access.hadoopFileSystems","s3a://prod-cdptrialuser19-trycdp-com")\
 .getOrCreate()
 
 #.config("spark.hadoop.fs.s3a.aws.credentials.provider","org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider")\
 
-flight_df_original =spark.read.parquet(
-  "s3a://ml-field/demo/flight-analysis/data/airline_parquet_partitioned/",
-)
+#flight_df_original =spark.read.parquet(
+#  "s3a://ml-field/demo/flight-analysis/data/airline_parquet_partitioned/",
+#)
+
+flight_df_original = spark.sql("select * from smaller_flight_table")
 
 # You can uncomment this and comment the previous line to get the able from Hive rather.
 #!cp /home/cdsw/hive-site.xml /etc/hadoop/conf/
@@ -66,8 +68,26 @@ assembler = VectorAssembler(
     inputCols = input_cols,
     outputCol = 'features')
 
+if len (sys.argv) == 4:
+  try:
+    maxIter = int(sys.argv[1])
+    elasticNetParam = float(sys.argv[2])
+    regParam = float(sys.argv[3])    
+  except:
+    sys.exit("Invalid Arguments passed to Experiment")
+else:
+  maxIter=15
+  elasticNetParam = 0.0
+  regParam = 0.01
 
-lr = LogisticRegression(featuresCol = 'features', labelCol = 'CANCELLED', maxIter=15, elasticNetParam = 0.0,regParam = 0.01)
+
+lr = LogisticRegression(
+  featuresCol = 'features', 
+  labelCol = 'CANCELLED', 
+  maxIter=maxIter, 
+  elasticNetParam = elasticNetParam,
+  regParam = regParam
+)
 
 pipeline = Pipeline(
   stages=[        
@@ -86,7 +106,14 @@ lrModel = pipeline.fit(train)
 
 predictionslr = lrModel.transform(test)
 evaluator = BinaryClassificationEvaluator(labelCol="CANCELLED",metricName="areaUnderROC")
-evaluator.evaluate(predictionslr)
 
-## Already Done
-#lrModel.write().overwrite().save("s3a://ml-field/demo/flight-analysis/data/models/large_model")
+AUROC_val = evaluator.evaluate(predictionslr)
+AUROC_val
+cdsw.track_metric("maxIter", maxIter)
+cdsw.track_metric("elasticNetParam", elasticNetParam)
+cdsw.track_metric("regParam", regParam)
+cdsw.track_metric("AUROC", round(AUROC_val,3))
+
+
+## Commented out as its already aone
+#lrModel.write().overwrite().save("s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/airlines/models/lr-model")

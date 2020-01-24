@@ -11,6 +11,7 @@ library(ggplot2)
 library(sparklyr)
 library(dplyr)
 
+
 #---
 
 # ## Start the Spark Session
@@ -19,16 +20,11 @@ library(dplyr)
 #spark_home_set("/etc/spark/")
 
 config <- spark_config()
-config$spark.hadoop.fs.s3a.aws.credentials.provider  <- "org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider"
-config$spark.executor.memory <- "16g"
-config$spark.executor.cores <- "4"
+config$spark.executor.memory <- "8g"
+config$spark.executor.cores <- "2"
 config$spark.driver.memory <- "6g"
-config$spark.executor.instances <- "10"
-config$spark.sql.catalogImplementation <- "in-memory"
-config$spark.yarn.access.hadoopFileSystems <- "s3a://ml-field"
-config$spark.dynamicAllocation.enabled  <- "false"
-
-
+config$spark.executor.instances <- "3"
+config$spark.yarn.access.hadoopFileSystems <- "s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/"
 spark <- spark_connect(master = "yarn-client", config=config)
 
 #---
@@ -43,16 +39,20 @@ html(paste("<a href='http://spark-",Sys.getenv("CDSW_ENGINE_ID"),".",Sys.getenv(
 # ## Import the Data
 # The data that is imported was the smaller data set created in Part 2. This is now stored in S3 in parquet format and will therefore load much quicker. To get the larger ML jobs to complete in a reasonable amount of time for a workshop audience, there total data set size is limited to 1,000,000 rows.
 
-flight_df <- spark_read_parquet(
-  spark,
-  name = "flight_df",
-  path = "s3a://ml-field/demo/flight-analysis/data/airline_parquet_partitioned/",
-)
+#flight_df_original = spark.sql("select * from smaller_flight_table")
+
+flight_df <- sdf_sql(spark, "select * from smaller_flight_table")
+
+#flight_df <- spark_read_parquet(
+#  spark,
+#  name = "flight_df",
+#  path = "s3a://ml-field/demo/flight-analysis/data/airline_parquet_partitioned/",
+#)
 
 
 sdf_schema(flight_df) %>% as.data.frame %>% t
 
-flight_df <- flight_df %>% na.omit() #%>% head(1000000)
+flight_df <- flight_df %>% na.omit() %>% sdf_sample(fraction = 1/600, replacement = FALSE, seed = 111)
 
 #---
 
