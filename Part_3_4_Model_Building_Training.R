@@ -23,7 +23,6 @@ config <- spark_config()
 config$spark.executor.memory <- "8g"
 config$spark.executor.cores <- "2"
 config$spark.driver.memory <- "6g"
-config$spark.executor.instances <- "3"
 config$spark.yarn.access.hadoopFileSystems <- "s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/"
 spark <- spark_connect(master = "yarn-client", config=config)
 

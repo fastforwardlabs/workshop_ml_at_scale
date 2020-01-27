@@ -10,9 +10,8 @@ spark = SparkSession\
     .builder\
     .appName("Airline ML")\
     .config("spark.executor.memory","8g")\
-    .config("spark.executor.cores","4")\
+    .config("spark.executor.cores","2")\
     .config("spark.driver.memory","6g")\
-    .config("spark.executor.instances","5")\
     .config("spark.yarn.access.hadoopFileSystems","s3a://prod-cdptrialuser19-trycdp-com")\
 .getOrCreate()
 
