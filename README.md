@@ -27,7 +27,7 @@ This project is for the end-to-end ML at Scale workshop. It creates an API that 
 install these R packages
 
 sparklyr
-psyche
+psych
 ggthemes
 leaflet
 

@@ -102,7 +102,7 @@ spark.sql("select count(*) from temp_flight_df").show()
 #  mode='overwrite', 
 #  path='s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/warehouse/tablespace/external/hive/smaller_flight_table')
 
-spark.sql("select count(*) from flight_test_table").show()
+#spark.sql("select count(*) from flight_test_table").show()
 
 spark.sql("select * from default.smaller_flight_table limit 10").show()
 

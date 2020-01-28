@@ -10,7 +10,7 @@ spark = SparkSession\
     .builder\
     .appName("Airline ML")\
     .config("spark.executor.memory","8g")\
-    .config("spark.executor.cores","2")\
+    .config("spark.executor.cores","4")\
     .config("spark.driver.memory","6g")\
     .config("spark.yarn.access.hadoopFileSystems","s3a://prod-cdptrialuser19-trycdp-com")\
 .getOrCreate()
@@ -108,10 +108,12 @@ evaluator = BinaryClassificationEvaluator(labelCol="CANCELLED",metricName="areaU
 
 AUROC_val = evaluator.evaluate(predictionslr)
 AUROC_val
-cdsw.track_metric("maxIter", maxIter)
-cdsw.track_metric("elasticNetParam", elasticNetParam)
-cdsw.track_metric("regParam", regParam)
-cdsw.track_metric("AUROC", round(AUROC_val,3))
+
+# Uncomment if running in an experiment
+#cdsw.track_metric("maxIter", maxIter)
+#cdsw.track_metric("elasticNetParam", elasticNetParam)
+#cdsw.track_metric("regParam", regParam)
+#cdsw.track_metric("AUROC", round(AUROC_val,3))
 
 
 ## Commented out as its already aone

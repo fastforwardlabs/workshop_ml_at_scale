@@ -1,0 +1,86 @@
+  
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js'></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css?family=Open+Sans');
+
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .bigger {
+            font-size: 1.2em;
+            line-height: 2em;
+        }
+
+        .btn {
+            width:100px; 
+            color: white;
+            background: #aaa;
+            border: 5px solid #aaa;
+            border-radius: 6px;
+
+            padding: 8px 8px;
+            text-align: center;
+            display: inline-block;
+            font-size: 1.2em;
+            margin: 4px 2px;
+            -webkit-transition-duration: 0.4s;
+            /* Safari */
+            transition-duration: 0.4s;
+            cursor: pointer;
+            text-decoration: none;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Cancelled Flight Prediction</h1>
+        <div class="bigger">Flight Info</div>
+        <div>
+            Carrier: AA<br>
+            Origin: ICT<br>
+            Dest: DFW<br>
+            Departure: 1135<br>
+            Duration: 85<br>
+            Week:11<br>
+            Distance: 328<br>
+          
+        </div>
+
+        
+        <div class="bigger" id='pred_value'>Predicted Value: </div>
+
+          <div class="btn" onclick="go_fetch()">Predict</div>
+    </div>
+    <script>
+      
+        var url = 'https://modelservice.ml-2bda3889-7e5.cdptrial.ud12-k3r3.cloudera.site/model';
+        var api_key = "ms98lkmxrqepl4o4zx9xa3uk8thgvdss"
+      
+        function go_fetch() {
+            var post_data = {
+                accessKey:api_key,
+                request: { feature : "AA,ICT,DFW,1135,85,11,328"} 
+            };
+
+            fetch(url, {
+                    method: 'POST', // or 'PUT'
+                    body: JSON.stringify(post_data), // data can be `string` or {object}!
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(response => d3.select("#pred_value").text("Predicted Value: " + (response.response.result == 0 ? "Not Cancelled" : "Cancelled")))
+                .catch(error => console.error('Error:', error));
+        }
+
+    </script>
+</body>
