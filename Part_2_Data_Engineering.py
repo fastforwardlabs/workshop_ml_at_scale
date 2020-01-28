@@ -1,24 +1,27 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
+from pyspark.sql.functions import *
 import os
-
 
 spark = SparkSession\
     .builder\
-    .appName("Airline")\
+    .appName("Airlines Part2 Data Engineering ")\
     .config("spark.executor.memory","8g")\
-    .config("spark.executor.cores","2")\
+    .config("spark.executor.cores","4")\
     .config("spark.driver.memory","6g")\
+    .config("spark.executor.instances","4")\
     .config("spark.yarn.access.hadoopFileSystems","s3a://prod-cdptrialuser19-trycdp-com")\
     .getOrCreate()
-
+    
+flights_path="s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/airlines_csv/*"
 
 from IPython.core.display import HTML
 HTML('<a href="http://spark-{}.{}">Spark UI</a>'.format(os.getenv("CDSW_ENGINE_ID"),os.getenv("CDSW_DOMAIN")))
 
-schema = StructType(
-  [
-    StructField("FL_DATE", TimestampType(), True),
+
+# ## Read Data from file
+
+schema = StructType([StructField("FL_DATE", TimestampType(), True),
     StructField("OP_CARRIER", StringType(), True),
     StructField("OP_CARRIER_FL_NUM", StringType(), True),
     StructField("ORIGIN", StringType(), True),
@@ -44,65 +47,91 @@ schema = StructType(
     StructField("WEATHER_DELAY", DoubleType(), True),
     StructField("NAS_DELAY", DoubleType(), True),
     StructField("SECURITY_DELAY", DoubleType(), True),
-    StructField("LATE_AIRCRAFT_DELAY", DoubleType(), True)
-  ]
+    StructField("LATE_AIRCRAFT_DELAY", DoubleType(), True)])
+
+
+flight_raw_df = spark.read.csv(
+    path=flights_path,
+    header=True,
+    schema=schema,
+    sep=',',
+    nullValue='NA'
 )
 
-flight_df = spark.read.csv(
-  path="s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/airlines_csv/*",
-  header=True,
-  schema=schema
-)
+# #### Simple data enrichment
+# #### Extract year and month and day and enrich the dataframe 
 
-from pyspark.sql.types import StringType
-from pyspark.sql.functions import udf,weekofyear
-
-# This has been added to help with partitioning.
-flight_df = flight_df\
-  .withColumn('WEEK',weekofyear('FL_DATE').cast('double'))
-
-smaller_data_set = flight_df.select(
-  "WEEK",
-  "FL_DATE",
-  "OP_CARRIER",
-  "OP_CARRIER_FL_NUM",
-  "ORIGIN",
-  "DEST",
-  "CRS_DEP_TIME",
-  "CRS_ARR_TIME",
-  "CANCELLED",
-  "CRS_ELAPSED_TIME",
-  "DISTANCE"
-)
-
-smaller_data_set.show()
+flight_year_month = flight_raw_df \
+  .withColumn("YEAR", year("FL_DATE")) \
+  .withColumn("MONTH", month("FL_DATE")) \
+  .withColumn("DAYOFMONTH", dayofmonth("FL_DATE"))
+  
+flight_year_month.cache()
+flight_year_month.createOrReplaceTempView('flights_raw')
+  
+# #### Save table in with no optimisation
+flight_year_month.write.saveAsTable(
+  'default.flight_not_partitioned', 
+   format='orc', 
+   mode='overwrite', 
+   path='s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/airlines/flight_not_partitioned')
 
 
-from pyspark.sql  import SQLContext
-sqlContext = SQLContext(spark)
-
-spark.sql("show databases").show()
-spark.sql("show tables in default").show()
-
-sqlContext.registerDataFrameAsTable(flight_df, "temp_flight_df")
-spark.sql("select count(*) from temp_flight_df").show()
+# ## optimize - order + partition
+# When saving data to Hive or Impala, it is important to optimize the data for reading
+# This usually entails : 
+# 1. Some type of ordering (in this case by Year, Month, Day)
+# 2. Some type of partionning of the table 
+#    This has a *major impact* when filtering / slicing 
 
 
-# This is commented out as it has already been run
-#smaller_data_set.write.parquet(
-#  path="s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/airlines/airline_parquet",
-#  mode='overwrite', 
-#  compression="snappy")
+flight_year_month = flight_year_month.orderBy(['YEAR','MONTH','DAYOFMONTH'])
+
+# #### Save data in Hive 
+
+# Required to insert into a partitionned table
+spark.sql("SET hive.exec.dynamic.partition = true")
+spark.sql("SET hive.exec.dynamic.partition.mode = nonstrict")
+
+flight_year_month.write.saveAsTable(
+  'default.flight_partitioned', 
+   format='orc', 
+   mode='overwrite', 
+   path='s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/airlines/flight_partitioned',
+   partitionBy=('YEAR', 'MONTH')) 
+  
+spark.sql("SHOW PARTITIONS default.flight_partitioned").show(100)
+spark.sql("ANALYZE TABLE default.flight_partitioned COMPUTE STATISTICS")
+
+#
+# --------- Read test comparison --------------
+# ## Read Data - difference in read with partitionned table
+# Predicate filtering
+Year = 2015
+Month = 10
+
+# ### Complete dataset size
+
+dataset_count = spark.sql("select count(*) from default.flight_partitioned").first()
+print('Dataset has {} lines'.format(dataset_count['count(1)']))
+
+# ###  Read non partitionned table
+import time
+start_time1 = time.time()
+statement = 'select * from default.flight_not_partitioned where YEAR = {} and MONTH = {}'.format(Year, Month)
+print(statement)
+flight_df1 = spark.sql(statement)
+
+print('dataset has {} lines'.format(flight_df1.count()))
+print("--- %s seconds ---" % (time.time() - start_time1))
 
 
-# This will write the table to Hive to be used for other SQL services.
-#smaller_data_set.write.saveAsTable(
-#  'default.smaller_flight_table', 
-#  format='parquet', 
-#  mode='overwrite', 
-#  path='s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/warehouse/tablespace/external/hive/smaller_flight_table')
+# ###  Read partitionned table
+import time
+start_time2 = time.time()
+statement = 'select * from default.flight_partitioned where YEAR = {} and MONTH = {}'.format(Year, Month)
+print(statement)
+flight_df2 = spark.sql(statement)
 
-#spark.sql("select count(*) from flight_test_table").show()
-
-spark.sql("select * from default.smaller_flight_table limit 10").show()
-
+print('dataset has {} lines'.format(flight_df2.count()))
+print("--- %s seconds ---" % (time.time() - start_time2))
