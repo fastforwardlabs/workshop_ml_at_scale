@@ -4,10 +4,10 @@ Flight analytics and cancellation prediction with sparklyr and pyspark
 This project is for the end-to-end ML at Scale workshop. It creates an API that can predict the likelihood of a flight being cancelled based on historic flight data. The original dataset comes from [Kaggle](https://www.kaggle.com/yuanyuwendymu/airline-delay-and-cancellation-data-2009-2018). The workshop shows both the pyspark and sparklyr implementations and covers:
 
 + Data Science and Exploration
-+ ML Model Building
-+ ML Model Optimisation
++ ML Model Building and Optimisation
 + ML Model Training
 + ML Model Serving
++ Deploying an Application
 
 
 ## Setup Required
@@ -19,8 +19,7 @@ This project is for the end-to-end ML at Scale workshop. It creates an API that 
 
 ### Python Users
 
-!pip3 install ipyleaflet
-!jupyter nbextension enable --py ipyleaflet
+!pip3 install flask
 
 
 ### R - users
@@ -30,7 +29,6 @@ sparklyr
 psych
 ggthemes
 leaflet
-
 
 
 Related Content

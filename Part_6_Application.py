@@ -8,7 +8,7 @@ from IPython.display import Javascript,HTML
 
 # This reduces the the output to the 
 log = logging.getLogger('werkzeug')
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.ERROR)
 
 
 app= Flask(__name__,static_url_path='')
