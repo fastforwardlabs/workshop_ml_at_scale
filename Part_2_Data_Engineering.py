@@ -82,6 +82,12 @@ smaller_data_set = flight_raw_df.select(
 #  mode='overwrite',
 #  compression="snappy")
 
+#smaller_data_set.write.saveAsTable(
+#  'default.smaller_flight_table',
+#   format='parquet', 
+#   mode='overwrite', 
+#   path='s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/airlines/airline_parquet_table')
+
 spark.sql("select * from default.smaller_flight_table limit 10").show()
 
 # ## This is added info for Hive optimisation
