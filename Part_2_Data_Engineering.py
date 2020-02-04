@@ -172,3 +172,5 @@ flight_df2 = spark.sql(statement)
 
 print('dataset has {} lines'.format(flight_df2.count()))
 print("--- %s seconds ---" % (time.time() - start_time2))
+
+spark.stop()
