@@ -1,4 +1,3 @@
-  
 <!DOCTYPE html>
 
 <head>
@@ -10,7 +9,10 @@
 
 
         body {
+            color: white;
             font-family: 'Open Sans', sans-serif;
+            background-image: url("sunset_germany_airport_frankfurt_aircraft_aviation_terminal_boeing-456915.jpg");
+            background-repeat: no-repeat;
         }
 
         .bigger {
@@ -18,56 +20,51 @@
             line-height: 2em;
         }
 
-        .btn {
-            width:100px; 
-            color: white;
-            background: #aaa;
-            border: 5px solid #aaa;
-            border-radius: 6px;
-
-            padding: 8px 8px;
-            text-align: center;
-            display: inline-block;
-            font-size: 1.2em;
-            margin: 4px 2px;
-            -webkit-transition-duration: 0.4s;
-            /* Safari */
-            transition-duration: 0.4s;
-            cursor: pointer;
-            text-decoration: none;
-            text-transform: uppercase;
-        }
+        .fld{border: 1px dotted #ccc; background: white; font-family: monospace; padding: 10px 20px; font-size: 18px; margin: 5px 5px 5px 0; color: red;}
+        .fld:focus { background-color:lightgray; outline: none;}
+        .btn{border: 1px dotted #ccc; background: white; font-family: monospace; padding: 10px 20px; font-size: 18px; margin: 5px 5px 5px 0; color: black;}
+        .btn:hover { background-color:lightgray; outline: none;}
+        label { display: inline-block; width: 150px; text-align: right;}
+      
+      
     </style>
 </head>
 
 <body>
     <h1>Cancelled Flight Prediction</h1>
         <div class="bigger">Flight Info</div>
-        <div>
-            Carrier: AA<br>
-            Origin: ICT<br>
-            Dest: DFW<br>
-            Departure: 1135<br>
-            Duration: 85<br>
-            Week:11<br>
-            Distance: 328<br>
-          
+  
+        <div class="frm">
+            <label for="ca">Carrier:</label> <input class="fld" type="text" value="AA" id="ca"><br>
+            <label for="or">Origin:</label> <input class="fld" type="text" value="ICT" id="or"><br>
+            <label for="de">Destination:</label> <input class="fld" type="text" value="DFW" id="de"><br>
+            <label for="dt">Departure Time:</label> <input class="fld" type="text" value="1135" id="dt"><br>
+            <label for="fd">Flight Duration:</label> <input class="fld" type="text" value="85" id="fd"><br>
+            <label for="we">Week:</label> <input class="fld" type="text" value="11" id="we"><br>
+            <label for="di">Distance:</label> <input class="fld" type="text" value="328" id="di"><br><br>
+            <input type="submit" class="btn" value="Will it be late?" onclick="go_fetch()"></input>
         </div>
-
+  
         
         <div class="bigger" id='pred_value'>Predicted Value: </div>
 
-          <div class="btn" onclick="go_fetch()">Predict</div>
+        
     </div>
     <script>
       
-        var url = 'https://modelservice.ml-bf8afda6-28e.cdptrial.ud12-k3r3.cloudera.site/model';
-        var api_key = "mleoyo7gu045vhtjdi43vgzg7wv2piq4"
+        var url = 'https://modelservice.ml-202b7a91-d03.cdptrial.ud12-k3r3.cloudera.site/model';
+        var api_key = "mjmh1kufwxmjqqicn1bi77pqyf7el67h"
       
         function go_fetch() {
             var post_data = {
                 accessKey:api_key,
-                request: { feature : "AA,ICT,DFW,1135,85,11,328"} 
+                request: { feature : d3.select('#ca').property("value")+","+
+                          d3.select('#or').property("value")+","+
+                          d3.select('#de').property("value")+","+
+                          d3.select('#dt').property("value")+","+
+                          d3.select('#fd').property("value")+","+
+                          d3.select('#we').property("value")+","+
+                          d3.select('#di').property("value") } 
             };
 
             fetch(url, {
