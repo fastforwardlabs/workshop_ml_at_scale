@@ -12,7 +12,7 @@ spark = SparkSession\
     .config("spark.yarn.access.hadoopFileSystems","s3a://prod-cdptrialuser19-trycdp-com")\
     .getOrCreate()
     
-flights_path="s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/airlines_csv/*"
+flights_path="s3a://prod-cdptrialuser19-trycdp-com/cdp-lake/data/airlines_lite/*"
 
 from IPython.core.display import HTML
 HTML('<a href="http://spark-{}.{}">Spark UI</a>'.format(os.getenv("CDSW_ENGINE_ID"),os.getenv("CDSW_DOMAIN")))
@@ -172,3 +172,5 @@ flight_df2 = spark.sql(statement)
 
 print('dataset has {} lines'.format(flight_df2.count()))
 print("--- %s seconds ---" % (time.time() - start_time2))
+
+spark.stop()
